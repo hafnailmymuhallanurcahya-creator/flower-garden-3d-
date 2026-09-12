@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Fairy Garden 3D - Magical Sanctuary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap');
+    body { margin: 0; overflow: hidden; font-family: 'Quicksand', sans-serif; background: radial-gradient(circle, #2a085c 0%, #0d0124 100%); }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+    .interactive { pointer-events: auto; }
+    .fairy-glass { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(199, 125, 255, 0.2); }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(236, 72, 153, 0.6); border-radius: 10px; }
+    .font-title { font-family: 'Fredoka', cursive; }
+  </style>
+</head>
+<body class="select-none">
+
+  <!-- Canvas 3D World -->
+  <div id="canvas-container">
+    <canvas id="fairyCanvas"></canvas>
+  </div>
+
+  <!-- UI Antarmuka Game Fairy Garden -->
+  <div class="ui-layer flex flex-col justify-between p-6">
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center">
+      <div class="fairy-glass rounded-3xl px-6 py-3 flex items-center gap-5 text-white interactive">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sparkles text-amber-300 text-xl animate-pulse"></i>
+          <div>
+            <p class="text-[10px] text-pink-200 uppercase font-bold tracking-wider">Serbuk Peri</p>
+            <span id="fairyDust" class="font-title text-xl text-yellow-300">2,500</span>
+          </div>
+        </div>
+        <div class="h-6 w-px bg-white/20"></div>
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-pink-300 text-xl"></i>
+          <div>
+            <p class="text-[10px] text-pink-200 uppercase font-bold tracking-wider">Level Taman</p>
+            <span class="font-title text-lg text-pink-100">Lv. 8 Fairy Sanctuary</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu Kanan -->
+      <div class="flex gap-3 interactive">
+        <button onclick="openModal('wardrobeModal')" class="fairy-glass hover:bg-white/30 text-white font-title px-5 py-3 rounded-2xl transition flex items-center gap-2">
+          <i class="fa-solid fa-crown text-amber-300"></i> Lemari Peri
+        </button>
+        <button onclick="openModal('shopModal')" class="fairy-glass hover:bg-white/30 text-white font-title px-5 py-3 rounded-2xl transition flex items-center gap-2">
+          <i class="fa-solid fa-seedling text-emerald-300"></i> Bibit Bunga Ajaib (50+)
+        </button>
+        <button onclick="openModal('craftModal')" class="fairy-glass hover:bg-white/30 text-white font-title px-5 py-3 rounded-2xl transition flex items-center gap-2">
+          <i class="fa-solid fa-fan text-sky-300"></i> Buket Bunga
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Companion Info -->
+    <div class="flex justify-start items-center interactive">
+      <div class="fairy-glass rounded-2xl p-4 text-white flex items-center gap-3">
+        <div class="text-3xl animate-bounce">🧚‍♀️</div>
+        <div>
+          <p class="font-title text-sm text-pink-200">Pendamping Peri: <span id="companionName" class="text-white">Lumina</span></p>
+          <p class="text-xs text-pink-100/80">"Taman ini terasa sangat hangat hari ini!"</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="flex justify-center gap-4 mb-2 interactive">
+      <button onclick="waterAll()" class="bg-gradient-to-r from-sky-400 to-indigo-500 hover:from-sky-500 hover:to-indigo-600 text-white font-title px-7 py-3.5 rounded-2xl shadow-lg transition flex items-center gap-2 transform hover:scale-105 border border-white/30">
+        <i class="fa-solid fa-droplet text-sky-200"></i> Siram Embun Ajaib
+      </button>
+      <button onclick="harvestAll()" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-title px-7 py-3.5 rounded-2xl shadow-lg transition flex items-center gap-2 transform hover:scale-105 border border-white/30">
+        <i class="fa-solid fa-hand-holding-heart text-pink-200"></i> Petik Bunga Mekar
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Katalog 50+ Bunga -->
+  <div id="shopModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-30 flex items-center justify-center hidden">
+    <div class="fairy-glass w-full max-w-3xl rounded-3xl p-6 m-4 max-h-[85vh] flex flex-col text-white">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-title text-2xl text-pink-200">Bibit Bunga Fairy Realm (50+)</h2>
+        <button onclick="closeModal('shopModal')" class="text-white/70 hover:text-white font-bold text-xl">✕</button>
+      </div>
+      <div id="shopGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto custom-scroll p-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal Lemari Baju & Peri -->
+  <div id="wardrobeModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-30 flex items-center justify-center hidden">
+    <div class="fairy-glass w-full max-w-xl rounded-3xl p-6 m-4 max-h-[85vh] flex flex-col text-white">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-title text-2xl text-pink-200">Koleksi Gaun & Peri Anggun</h2>
+        <button onclick="closeModal('wardrobeModal')" class="text-white/70 hover:text-white font-bold text-xl">✕</button>
+      </div>
+      <div id="wardrobeGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto custom-scroll p-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal Crafting Buket Bunga -->
+  <div id="craftModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-30 flex items-center justify-center hidden">
+    <div class="fairy-glass w-full max-w-lg rounded-3xl p-6 m-4 flex flex-col text-white text-center">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-title text-2xl text-pink-200">Studio Merangkai Bunga</h2>
+        <button onclick="closeModal('craftModal')" class="text-white/70 hover:text-white font-bold text-xl">✕</button>
+      </div>
+      <p class="text-sm text-pink-100 mb-6">Rangkai bunga yang sudah kamu panen menjadi mahkota atau buket ajaib untuk mendapatkan Serbuk Peri berlimpah!</p>
+      <div class="bg-white/10 rounded-2xl p-6 border border-white/20 mb-6">
+        <div class="text-5xl mb-3">💐</div>
+        <p class="font-title text-lg text-yellow-300">Buket Peri Emas</p>
+        <p class="text-xs text-white/80 mt-1">Menghasilkan +500 Serbuk Peri</p>
+      </div>
+      <button onclick="craftBouquet()" class="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-title py-3 rounded-2xl transition">Rangkai Buket Sekarang</button>
+    </div>
+  </div>
+
+  <script>
+    // --- DATABASE BUNGA (50+ VARIASI BERCAYA) ---
+    const FLOWER_DB = [];
+    const fairyFlowerTypes = ['Moonlight Lily', 'Crystal Rose', 'Starlight Orchid', 'Sunbeam Sunflower', 'Aurora Peony', 'Enchanted Lotus', 'Glow Dahlia', 'Cosmic Tulip'];
+    const fairyColors = ['#ff70a6', '#ff477e', '#b5179e', '#7209b7', '#4cc9f0', '#4895ef', '#f72585', '#ffb703', '#70e000', '#ffffff'];
+
+    let fId = 1;
+    fairyFlowerTypes.forEach(type => {
+      fairyColors.forEach(color => {
+        if (FLOWER_DB.length < 52) {
+          FLOWER_DB.push({
+            id: fId++,
+            name: `${type} #${fId}`,
+            price: Math.floor(Math.random() * 200) + 50,
+            color: color,
+            glow: color
+          });
+        }
+      });
+    });
+
+    // --- DATABASE DRESS & SKIN PERI ---
+    const OUTFITS = [
+      { id: 1, name: 'Gown Sparkle Pink', dressColor: '#ff85a1', hairColor: '#ffe5ec', wingColor: '#ffc6ff', crown: '👑', fairyName: 'Lumina', unlocked: true },
+      { id: 2, name: 'Royal Violet Wings', dressColor: '#7209b7', hairColor: '#f72585', wingColor: '#b5179e', crown: '🧚‍♀️', fairyName: 'Celestia', unlocked: false, price: 500 },
+      { id: 3, name: 'Golden Sun Princess', dressColor: '#ffb703', hairColor: '#fff3b0', wingColor: '#ffd166', crown: '👸', fairyName: 'Aurora', unlocked: false, price: 1000 },
+      { id: 4, name: 'Ocean Mist Dress', dressColor: '#4ea8de', hairColor: '#ffffff', wingColor: '#90e0ef', crown: '❄️', fairyName: 'Nixie', unlocked: false, price: 800 }
+    ];
+
+    let currentOutfit = OUTFITS[0];
+    let fairyDust = 2500;
+
+    // --- LAHAN TANAH 3D ISOMETRIC ---
+    const GRID_SIZE = 4;
+    const plots = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        plots.push({
+          row: r, col: c,
+          watered: false,
+          flower: FLOWER_DB[(r * GRID_SIZE + c) % FLOWER_DB.length],
+          bloomed: true
+        });
+      }
+    }
+
+    // --- RENDERING CANVAS 3D ENGINE ---
+    const canvas = document.getElementById('fairyCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, tileW = 120, tileH = 60;
+    let fairyWingAngle = 0;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function toIso(r, c) {
+      const x = (c - r) * (tileW / 2) + width / 2;
+      const y = (c + r) * (tileH / 2) + height / 3.2;
+      return { x, y };
+    }
+
+    function renderScene() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Animation angle for wings
+      fairyWingAngle += 0.1;
+
+      // 1. Gambar Lahan Tanah 3D Ajaib
+      plots.forEach(plot => {
+        const { x, y } = toIso(plot.row, plot.col);
+        const depth = 25;
+
+        // Warna tanah basah vs kering
+        const topColor = plot.watered ? '#3a2347' : '#5a386c';
+        const sideColor = plot.watered ? '#261530' : '#3e244b';
+
+        // Sisi Kiri Block 3D
+        ctx.fillStyle = sideColor;
+        ctx.beginPath();
+        ctx.moveTo(x - tileW / 2, y);
+        ctx.lineTo(x, y + tileH / 2);
+        ctx.lineTo(x, y + tileH / 2 + depth);
+        ctx.lineTo(x - tileW / 2, y + depth);
+        ctx.fill();
+
+        // Sisi Kanan Block 3D
+        ctx.beginPath();
+        ctx.moveTo(x, y + tileH / 2);
+        ctx.lineTo(x + tileW / 2, y);
+        ctx.lineTo(x + tileW / 2, y + depth);
+        ctx.lineTo(x, y + tileH / 2 + depth);
+        ctx.fill();
+
+        // Permukaan Atas
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(x, y - tileH / 2);
+        ctx.lineTo(x + tileW / 2, y);
+        ctx.lineTo(x, y + tileH / 2);
+        ctx.lineTo(x - tileW / 2, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = plot.watered ? 'rgba(76, 201, 240, 0.6)' : 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 2. Gambar Bunga Ajaib 3D dengan Efek Glow
+        if (plot.flower && plot.bloomed) {
+          ctx.save();
+          // Glow effect
+          ctx.shadowColor = plot.flower.glow;
+          ctx.shadowBlur = plot.watered ? 25 : 12;
+
+          // Batang Bunga Glowing
+          ctx.strokeStyle = '#70e000';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y - 40);
+          ctx.stroke();
+
+          // Kelopak Bunga 3D Sphere
+          ctx.fillStyle = plot.flower.color;
+          ctx.beginPath();
+          ctx.arc(x, y - 45, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Inti Cahaya Bunga
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x, y - 45, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+
+      // 3. GAMBAR KARAKTER PERI CANTIK 3D (AVATAR MANUSIA)
+      const charPos = toIso(-1, 1.5);
+      const cx = charPos.x, cy = charPos.y;
+
+      ctx.save();
+      // Glow Avatar Peri
+      ctx.shadowColor = currentOutfit.wingColor;
+      ctx.shadowBlur = 20;
+
+      // Kepakan Sayap Peri 3D (Kiri & Kanan)
+      const wingScale = Math.sin(fairyWingAngle) * 10;
+      ctx.fillStyle = currentOutfit.wingColor;
+      // Sayap Kiri
+      ctx.beginPath();
+      ctx.ellipse(cx - 22, cy - 65, 20 + wingScale, 35, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+      // Sayap Kanan
+      ctx.beginPath();
+      ctx.ellipse(cx + 22, cy - 65, 20 + wingScale, 35, Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bayangan Karakter
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 30, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Gaun Peri Anggun 3D
+      ctx.fillStyle = currentOutfit.dressColor;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 55);
+      ctx.lineTo(cx + 30, cy - 10);
+      ctx.lineTo(cx - 30, cy - 10);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wajah / Kepala Cantik
+      ctx.fillStyle = '#ffdfc4';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 70, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rambut Indah
+      ctx.fillStyle = currentOutfit.hairColor;
+      ctx.beginPath();
+      ctx.arc(cx, cy - 76, 20, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Mahkota Peri
+      ctx.font = '22px serif';
+      ctx.fillText(currentOutfit.crown, cx - 12, cy - 86);
+
+      ctx.restore();
+
+      requestAnimationFrame(renderScene);
+    }
+
+    renderScene();
+
+    // --- LOGIKA GAME ---
+    function waterAll() {
+      plots.forEach(p => p.watered = true);
+    }
+
+    function harvestAll() {
+      let count = 0;
+      plots.forEach(p => {
+        if (p.bloomed) {
+          count++;
+          p.watered = false;
+        }
+      });
+      if (count > 0) {
+        fairyDust += count * 150;
+        document.getElementById('fairyDust').innerText = fairyDust.toLocaleString();
+      }
+    }
+
+    function craftBouquet() {
+      fairyDust += 500;
+      document.getElementById('fairyDust').innerText = fairyDust.toLocaleString();
+      closeModal('craftModal');
+    }
+
+    // --- UI MODALS & LEMARI ---
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      if (id === 'shopModal') renderShop();
+      if (id === 'wardrobeModal') renderWardrobe();
+    }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function renderShop() {
+      const grid = document.getElementById('shopGrid');
+      grid.innerHTML = '';
+      FLOWER_DB.forEach(f => {
+        grid.innerHTML += `
+          <div class="bg-white/10 p-3 rounded-2xl flex flex-col items-center border border-white/20 hover:bg-white/20 transition">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg" style="background:${f.color}">🌸</div>
+            <p class="font-title text-xs text-white mt-2 text-center">${f.name}</p>
+            <p class="text-[11px] text-yellow-300 font-bold mb-2">✨ ${f.price}</p>
+            <button onclick="buyFlower(${f.id})" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-title text-xs py-1.5 rounded-xl transition">Tanam</button>
+          </div>`;
+      });
+    }
+
+    function buyFlower(id) {
+      const f = FLOWER_DB.find(item => item.id === id);
+      if (fairyDust >= f.price) {
+        fairyDust -= f.price;
+        const target = plots.find(p => !p.watered) || plots[0];
+        target.flower = f;
+        target.bloomed = true;
+        document.getElementById('fairyDust').innerText = fairyDust.toLocaleString();
+        closeModal('shopModal');
+      }
+    }
+
+    function renderWardrobe() {
+      const grid = document.getElementById('wardrobeGrid');
+      grid.innerHTML = '';
+      OUTFITS.forEach(o => {
+        const btn = o.unlocked
+          ? `<button onclick="equipOutfit(${o.id})" class="w-full ${currentOutfit.id === o.id ? 'bg-emerald-500' : 'bg-pink-500'} text-white font-title text-xs py-1.5 rounded-xl">${currentOutfit.id === o.id ? 'Dipakai ✓' : 'Pakai'}</button>`
+          : `<button onclick="buyOutfit(${o.id})" class="w-full bg-amber-400 text-white font-title text-xs py-1.5 rounded-xl">Buka ✨ ${o.price}</button>`;
+        grid.innerHTML += `
+          <div class="bg-white/10 p-4 rounded-2xl flex flex-col items-center border border-white/20">
+            <span class="text-3xl mb-1">${o.crown}</span>
+            <p class="font-title text-xs text-white mb-1">${o.name}</p>
+            <p class="text-[10px] text-pink-200 mb-2">Peri: ${o.fairyName}</p>
+            ${btn}
+          </div>`;
+      });
+    }
+
+    function equipOutfit(id) {
+      currentOutfit = OUTFITS.find(o => o.id === id);
+      document.getElementById('companionName').innerText = currentOutfit.fairyName;
+      renderWardrobe();
+      closeModal('wardrobeModal');
+    }
+
+    function buyOutfit(id) {
+      const o = OUTFITS.find(item => item.id === id);
+      if (fairyDust >= o.price) {
+        fairyDust -= o.price;
+        o.unlocked = true;
+        equipOutfit(id);
+        document.getElementById('fairyDust').innerText = fairyDust.toLocaleString();
+      }
+    }
+  </script>
+</body>
+</html>
